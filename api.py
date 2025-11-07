@@ -1,11 +1,10 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from ultralytics import YOLO
-import cv2
-import numpy as np
-import tempfile
-import os
+import cv2, numpy as np, tempfile, os
 
 app = Flask(__name__)
+CORS(app)  # cho phép tất cả domain (hoặc giới hạn origin nếu muốn)
 
 # ========== NẠP MODEL YOLO ==========
 MODEL_PATH = "best.pt"
@@ -17,7 +16,6 @@ print("✅ Model đã sẵn sàng!")
 def home():
     return "YOLO API đang hoạt động 🚀"
 
-# ========== API NHẬN ẢNH ==========
 @app.route("/detect", methods=["POST"])
 def detect():
     if "image" not in request.files:
@@ -32,7 +30,6 @@ def detect():
         file.save(tmp.name)
         img_path = tmp.name
 
-    # Dự đoán YOLO
     results = model(img_path, conf=0.4, save=False)[0]
     boxes = []
 
@@ -48,9 +45,8 @@ def detect():
         })
 
     boxes.sort(key=lambda b: b["bbox"][0])
-    boxes = boxes[:7]  # chỉ lấy 7 box đầu
+    boxes = boxes[:7]
 
-    # Xóa file tạm
     os.remove(img_path)
 
     return jsonify({
@@ -59,6 +55,5 @@ def detect():
     })
 
 if __name__ == "__main__":
-    # Render sẽ dùng cổng 10000 hoặc PORT env var
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
